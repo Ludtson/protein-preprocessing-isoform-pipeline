@@ -1,0 +1,8 @@
+# outputs
+run_*/
+results_*/
+*.log
+
+# temp
+tmp_*
+

@@ -1,0 +1,4 @@
+Species	N_Input_Proteins	N_Cleaned_Proteins	Filtered_Total	S	noM	<30	S/noM	S/<30	S/noM/<30	noM/<30	N_input_proteins	N_genes_processed	N_output_proteins
+Alyrata	33132	32741	391	206	182	2	1	0	0	0	32741	604	604
+Athaliana	48455	48251	204	30	78	84	2	0	0	10	48251	310	310
+Boleracea	59220	56219	3001	180	2783	15	22	0	0	1	56219	664	664
