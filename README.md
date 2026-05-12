@@ -1,10 +1,10 @@
-# 🧬 Protein Preprocessing & Isoform Selection Pipeline
+# Protein Preprocessing & Isoform Selection Pipeline
 
 A reproducible framework for generating **high-quality, standardized proteomes** using biologically informed filtering, completeness assessment, and isoform normalization for multi-species comparative genomics.
 
 ---
 
-## 🔑 Rationale
+## Rationale
 
 Comparative genomics workflows depend critically on **consistent, high-quality protein datasets**.  
 However, publicly available proteomes often contain:
@@ -25,7 +25,7 @@ This pipeline addresses these issues by providing a **standardized preprocessing
 
 ---
 
-## 🔬 Methodological Overview
+## Methodological Overview
 
 ### **1. Annotation Integration & Species Selection**
 
@@ -68,8 +68,8 @@ Optional:
 - Dataset can be re-evaluated using BUSCO post-filtering  
 
 This step ensures:
-✅ non-redundant gene representation  
-✅ comparable gene sets across species  
+- non-redundant gene representation  
+- comparable gene sets across species  
 
 ---
 
@@ -84,7 +84,7 @@ This enables downstream analyses requiring nucleotide-level resolution.
 
 ---
 
-## ✅ Outputs
+## Outputs
 
 - **Standardized longest protein isoforms (FASTA)**  
 - **Longest CDS sequences (FASTA, optional)**  
@@ -100,7 +100,7 @@ These outputs are optimized for:
 
 ---
 
-## 🧾 Pipeline Overview
+## Pipeline Overview
 
 ### Full LINGUA Workflow
 
@@ -112,7 +112,7 @@ These outputs are optimized for:
 
 ---
 
-## 🧭 Role in the LINGUA Framework
+## Role in the LINGUA Framework
 
 This repository represents **Stage 1: Dataset Curation and Preprocessing**  
 within the LINGUA comparative genomics pipeline:
@@ -130,7 +130,7 @@ While part of a larger framework, this module is:
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ```bash
 bash scripts/longest_protein_pipeline.sh \
@@ -140,7 +140,7 @@ bash scripts/longest_protein_pipeline.sh \
 ```
 
 
-## 🧪 Reproducible Example
+## Reproducible Example
 
 This repository includes a small test dataset (3 species) for verifying pipeline behavior.
 
@@ -181,7 +181,7 @@ This file contains the final filtered protein set where:
 
 ---
 
-## ⚠️ Notes on Example Dataset
+## Notes on Example Dataset
 
 This dataset is simplified for demonstration:
 
@@ -198,7 +198,7 @@ The pipeline supports full datasets without modification.
 
 ---
 
-## ⚙️ Pipeline Components
+## Pipeline Components
 
 ### Orchestration (scripts/)
 
@@ -215,7 +215,7 @@ The pipeline supports full datasets without modification.
 
 ---
 
-## 📂 Directory Structure
+## Directory Structure
 
 - bin/ → Python utilities  
 - scripts/ → pipeline execution scripts  
@@ -225,7 +225,7 @@ The pipeline supports full datasets without modification.
 
 ---
 
-## ⚡ Design Principles
+## Design Principles
 
 - ✅ Modular and reusable components  
 - ✅ Reproducible workflows  
@@ -235,9 +235,9 @@ The pipeline supports full datasets without modification.
 
 ---
 
-## 🔬 Scope
+## Scope
 
-✅ Stage 1 — Dataset curation and proteome standardization  
+ Stage 1 — Dataset curation and proteome standardization  
 
 ### Planned Extensions
 
@@ -247,13 +247,13 @@ The pipeline supports full datasets without modification.
 
 ---
 
-## 📜 License
+## License
 
 MIT License  
 
 ---
 
-## 🙌 Acknowledgements
+## Acknowledgements
 
 Casola Lab  
 Ecology & Conservation Biology Program  
