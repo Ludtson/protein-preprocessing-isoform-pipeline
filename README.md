@@ -36,17 +36,22 @@ These outputs are intended for orthology inference (e.g., OrthoFinder), other co
 ### Full LINGUA workflow
 
 ```mermaid
-%%{init: {"flowchart": {"nodeSpacing": 80, "rankSpacing": 120, "padding": 20}, "themeVariables": {"fontSize": "34px"}}}%%
+%%{init: {"flowchart": {"nodeSpacing": 60, "rankSpacing": 100, "padding": 15}, "themeVariables": {"fontSize": "18px"}}}%%
 flowchart LR
-    A["<b>Dataset Curation</b><br/><br/>selecting high quality<br/>annotations and filtering<br/>longest isoforms"]
-    B["<b>Orthology Analysis</b><br/><br/>clustering proteins with<br/>OrthoFinder to place<br/>genes in the phylogeny"]
-    C["<b>Homolog Exclusion</b><br/><br/>effective and efficient<br/>homology searches to<br/>exclude false positives"]
-    D["<b>Synteny Validation</b><br/><br/>multiple genome<br/>alignments to identify<br/>syntenic regions"]
+    A["`**Dataset Curation**
+
+    selecting high quality annotations and filtering longest isoforms`"]
+    B["`**Orthology Analysis**
+
+    clustering proteins with OrthoFinder to place genes in the phylogeny`"]
+    C["`**Homolog Exclusion**
+
+    effective and efficient homology searches to exclude false positives`"]
+    D["`**Synteny Validation**
+
+    multiple genome alignments to identify syntenic regions`"]
 
     A --> B --> C --> D
-
-    classDef big font-size:34px,padding:25px,stroke-width:2px;
-    class A,B,C,D big
 ```
 
 ### Step 1: dataset curation and preprocessing
