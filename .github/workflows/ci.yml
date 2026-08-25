@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  reproducibility-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Syntax-check Python utilities
+        run: python -m py_compile bin/*.py
+
+      - name: Syntax-check shell scripts
+        run: |
+          bash -n scripts/longest_protein_pipeline.sh
+          bash -n scripts/qc_pipeline.sh
+
+      - name: Run pipeline on example dataset
+        run: |
+          bash scripts/longest_protein_pipeline.sh \
+            -g example_data/gff \
+            -f example_data/protein \
+            -o test_output
+
+      - name: Compare against expected output
+        run: |
+          diff test_output/master_summary_report.tsv \
+            example_data/test_run/master_summary_report.tsv

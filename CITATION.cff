@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "Protein Preprocessing & Isoform Selection Pipeline"
+abstract: >-
+  A reproducible pipeline for protein-level quality control and longest-isoform
+  selection across multi-species GFF/protein FASTA datasets, developed as part
+  of dissertation work on the identification and evolutionary analysis of
+  de novo genes (DNGs).
+authors:
+  - family-names: Owoyemi
+    given-names: Adekola
+    orcid: "https://orcid.org/0000-0003-4251-5777"
+    affiliation: "Protein Evolution Lab (Casola Lab), Texas A&M University"
+  - name: "Protein Evolution Lab (Casola Lab), Texas A&M University"
+repository-code: "https://github.com/Ludtson/protein-preprocessing-isoform-pipeline"
+license: MIT
+version: 1.0.0
+date-released: "2026-08-24"
+keywords:
+  - comparative genomics
+  - proteome preprocessing
+  - isoform selection
+  - de novo genes
+  - bioinformatics pipeline
