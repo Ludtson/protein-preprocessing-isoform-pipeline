@@ -35,11 +35,59 @@ These outputs are intended for orthology inference (e.g., OrthoFinder), other co
 
 ### Full LINGUA workflow
 
-![Full Pipeline](docs/lingua_full_pipeline.png)
+```mermaid
+flowchart LR
+    A["<b>Dataset Curation</b><br/>selecting high quality<br/>annotations and filtering<br/>longest isoforms"]
+    B["<b>Orthology Analysis</b><br/>clustering proteins with<br/>OrthoFinder to place<br/>genes in the phylogeny"]
+    C["<b>Homolog Exclusion</b><br/>effective and efficient<br/>homology searches to<br/>exclude false positives"]
+    D["<b>Synteny Validation</b><br/>multiple genome<br/>alignments to identify<br/>syntenic regions"]
+
+    A --> B --> C --> D
+```
 
 ### Step 1: dataset curation and preprocessing
 
-![Step 1 Pipeline](docs/step1_pipeline.png)
+Species selection and BUSCO-based completeness assessment (shown greyed out below) happen upstream, before files reach this pipeline — see "Input expectations" above. This repository starts from already-selected annotation and protein FASTA files.
+
+```mermaid
+flowchart TD
+    subgraph upstream["Upstream (not part of this repository)"]
+        direction TB
+        A[("Annotation Data<br/>NCBI | Phytozome | Ensembl")]
+        B["1. BUSCO Assessment<br/>(BUSCOv5.74 — brassicales.db > 92%)"]
+        C[("23 High Quality Proteomes<br/>21 Brassicaceae + 2 Outgroups")]
+        A -.-> B
+        B -.-> C
+    end
+
+    D["2. Proteome Cleanup<br/>'Quasi'-Proteins:<br/>noM, &lt;30aa, internal stops"]
+    E[("Clean Proteomes<br/>~798K protein sequences")]
+    F["3. Isoform Selection<br/>1 protein/gene<br/>clean-up IDs, re-validate BUSCO"]
+    G[["Standardized Longest Isoforms<br/>Ready for LINGUA Step 2"]]
+
+    C -.-> D
+    D --> E
+    E --> F
+    F --> G
+
+    subgraph nucleotide["Optional: nucleotide extraction"]
+        direction TB
+        H[("CDS FASTA")]
+        I[("cDNA FASTA")]
+        J["Nucleotide Extraction"]
+        K[["Longest CDS FASTA"]]
+        L[["Longest cDNA FASTA"]]
+        H --> J
+        I --> J
+        J --> K
+        J --> L
+    end
+
+    G -.-> nucleotide
+
+    classDef upstreamNode fill:#f5f5f5,stroke:#999,color:#666,stroke-dasharray: 4 3;
+    class A,B,C upstreamNode
+```
 
 ## Role in the LINGUA framework
 
