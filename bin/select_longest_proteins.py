@@ -245,6 +245,10 @@ def read_gff_maps(gff_path, stderr=sys.stderr):
 
             gid = parent.split(",")[0]
             transcript_to_gene[tid] = gid
+            # Fallback strand source for GFFs with no "gene" feature line at all
+            # (only mRNA/CDS/exon): use the mRNA's own strand column, but never
+            # override a strand already recorded from an actual "gene" line.
+            gene_strand.setdefault(gid, strand)
 
             for k in biotype_keys_tx:
                 if k in attrs:

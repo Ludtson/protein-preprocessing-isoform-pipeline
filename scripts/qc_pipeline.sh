@@ -79,7 +79,7 @@ for fasta_file in "$INPUT_DIR"/*.faa; do
 
     # Run the qc_protein script. Its summary will print to the screen,
     # and its detailed TSV will be saved.
-    "$SCRIPT_DIR/qc_protein.v.0.2.py" \
+    "$SCRIPT_DIR/../bin/qc_proteins.py" \
         -i "$fasta_file" \
         -o "$output_faa" \
         -s "$species_name" \

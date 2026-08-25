@@ -133,6 +133,7 @@ def main():
              open(args.output_fasta, 'w', encoding='utf-8') as ofh:
 
             header = ""
+            seq = ""
             for line in ifh:
                 line = line.strip()
                 if not line:
