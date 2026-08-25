@@ -49,6 +49,10 @@ GFF_DIR=""
 FASTA_DIR=""
 GFF_EXT=".gff"
 FASTA_EXT=".faa"
+# Extensions tried, in order, when locating an input protein FASTA for a
+# species — mirrors the fallback already used for CDS/cDNA input. Output
+# protein files always use $FASTA_EXT regardless of which of these matched.
+FASTA_INPUT_EXTS=(faa fa fasta)
 WITH_TRANSCRIPTS=false
 
 SPECIES_MAP_FILE=""
@@ -181,19 +185,33 @@ if [ "$WITH_TRANSCRIPTS" = true ]; then
     [ -n "$CDNA_DIR" ] && mkdir -p "$CDNA_SUBDIR"
 fi
 
+# Finds the input protein FASTA for a species, trying $FASTA_INPUT_EXTS in
+# order. Prints the matched path and returns 0, or returns 1 if none exist.
+find_input_fasta () {
+    local base="$1"
+    local ext
+    for ext in "${FASTA_INPUT_EXTS[@]}"; do
+        if [ -f "${FASTA_DIR}/${base}.${ext}" ]; then
+            printf '%s' "${FASTA_DIR}/${base}.${ext}"
+            return 0
+        fi
+    done
+    return 1
+}
+
 process_one_species () {
 
     local species_name="$1"
     local base_name="$2"
 
-    input_fasta="${FASTA_DIR}/${base_name}${FASTA_EXT}"
+    input_fasta=$(find_input_fasta "$base_name") || input_fasta=""
     input_gff="${GFF_DIR}/${base_name}.gff"
     if [ ! -f "$input_gff" ]; then
         input_gff="${GFF_DIR}/${base_name}.gff3"
     fi
 
-    if [ ! -f "$input_fasta" ] || [ ! -f "$input_gff" ]; then
-        log WARNING "Missing input files for ${base_name}, skipping"
+    if [ -z "$input_fasta" ] || [ ! -f "$input_gff" ]; then
+        log WARNING "Missing input files for ${base_name} (looked for .${FASTA_INPUT_EXTS[0]}/.${FASTA_INPUT_EXTS[1]}/.${FASTA_INPUT_EXTS[2]} and .gff/.gff3), skipping"
         return
     fi
 
@@ -401,10 +419,19 @@ else
 
     log INFO "Running without species map (threads: ${THREADS})"
 
-    for fasta_file in "$FASTA_DIR"/*"$FASTA_EXT"; do
-        [ -e "$fasta_file" ] || continue
-        base_name=$(basename "$fasta_file" "$FASTA_EXT")
-        printf '%s\t%s\n' "$base_name" "$base_name"
+    # Discover species across all accepted protein-FASTA extensions, not
+    # just $FASTA_EXT — a *.fasta or *.fa file previously wasn't even
+    # noticed here (silently, with no warning), unlike the map-file path
+    # which at least logs a "missing input files" warning for a mismatch.
+    declare -A seen_species
+    for ext in "${FASTA_INPUT_EXTS[@]}"; do
+        for fasta_file in "$FASTA_DIR"/*".${ext}"; do
+            [ -e "$fasta_file" ] || continue
+            base_name=$(basename "$fasta_file" ".${ext}")
+            [ -n "${seen_species[$base_name]:-}" ] && continue
+            seen_species[$base_name]=1
+            printf '%s\t%s\n' "$base_name" "$base_name"
+        done
     done > "$JOB_LIST"
 
 fi

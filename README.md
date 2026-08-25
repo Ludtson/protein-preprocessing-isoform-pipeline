@@ -93,6 +93,20 @@ bash scripts/longest_protein_pipeline.sh \
 
 To tag output FASTA headers with the species name, add `--format-headers --add-species`. The species name used is the map-file entry when `-m` is given, or the filename (without extension) otherwise. See `bash scripts/longest_protein_pipeline.sh --help` for the full option list, including `--threads`, `--with-transcripts`, and `--keep_noM_only`.
 
+### File naming and matching
+
+Per species, input files across `--gff-dir`, `--fasta-dir`, `--cds-dir`, and `--cdna-dir` are paired by identical basename — e.g. `Athaliana.faa`, `Athaliana.gff`, `Athaliana.fna` (CDS), and `Athaliana.fasta` (cDNA) are all treated as the same species, regardless of which directory each lives in.
+
+Accepted input extensions:
+
+- Protein FASTA (`--fasta-dir`): tries `.faa`, `.fa`, `.fasta`, in that order, and uses the first match.
+- GFF (`--gff-dir`): `.gff`, falling back to `.gff3` if the former isn't found.
+- CDS (`--cds-dir`) and cDNA (`--cdna-dir`): each tries `.fna`, `.fa`, `.fasta`, in that order, and uses the first match.
+
+If none of a species' required files (GFF and protein FASTA) can be found under any accepted extension, that species is skipped with a `[WARNING] Missing input files for <name> ...` line in `pipeline.log` naming the extensions that were tried — this applies whether you're running with `-m/--map-file` or discovering species directly from `--fasta-dir`.
+
+Output naming is fixed regardless of the input extension: CDS output is always written as `<basename>.fna` under `6_longest_cds/`, and cDNA output is always `<basename>.cdna.fasta` under `7_longest_cdna/`.
+
 ## Reproducible example
 
 The repository includes a small three-species test dataset for verifying pipeline behavior.
