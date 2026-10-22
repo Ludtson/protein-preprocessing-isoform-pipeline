@@ -270,6 +270,9 @@ def read_gff_maps(gff_path, stderr=sys.stderr):
                 aliases.add(name)
             aliases.add(strip_version_suffix(tid))
             aliases.add(tid)
+            accession = attrs.get("Accession")  # CNCB GWH: transcript accession (GWHT...)
+            if accession:
+                aliases.add(accession)
 
             for a in aliases:
                 transcript_alias_to_id.setdefault(a, tid)
@@ -310,6 +313,7 @@ def read_gff_maps(gff_path, stderr=sys.stderr):
                 pid = (
                     attrs.get("protein_id")
                     or attrs.get("proteinId")
+                    or attrs.get("Protein_Accession")  # CNCB GWH: protein accession (GWHP...) on CDS lines
                     or maybe_from_dbxref(attrs)
                 )
                 pid = normalize_protein_id(pid) if pid else None
@@ -378,7 +382,7 @@ def read_fasta_sequences_and_tags(fasta_path):
     """
     Read a protein FASTA and return:
       - seqs: dict primary_id -> sequence  (primary_id = first token, normalized)
-      - transcript_tag: dict primary_id -> transcript tag value if header contains 'transcript=...'
+      - transcript_tag: dict primary_id -> transcript tag value if header contains 'transcript=...' or 'mRNA=...'
     """
     seqs = {}
     transcript_tag = {}
@@ -394,7 +398,8 @@ def read_fasta_sequences_and_tags(fasta_path):
                 pid = normalize_protein_id(primary)
                 cur_id = pid
                 chunks = []
-                m = re.search(r"(?:^|\s)transcript=([^\s;]+)", header)
+                # transcript= (Phytozome) or mRNA= (CNCB GWH) in the FASTA header
+                m = re.search(r"(?:^|\s)(?:transcript|mRNA)=([^\s;]+)", header)
                 if m:
                     transcript_tag[cur_id] = m.group(1)
             else:

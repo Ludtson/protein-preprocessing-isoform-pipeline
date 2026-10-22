@@ -461,7 +461,8 @@ done
 # optional cleanup
 rm -f "$OUTPUT_DIR"/tmp_*_summary.tsv
 
-n_processed=$(( $(wc -l < "$SUMMARY_FILE") - 1 ))
+# processed = species with a non-empty final protein file (a summary row is written before the empty-output check)
+n_processed=$(find "$FINAL_FASTA_SUBDIR" -name "*_final${FASTA_EXT}" -size +0 2>/dev/null | wc -l)
 if [ "$n_processed" -le 0 ]; then
     log ERROR "No species were successfully processed. Check ${LOG_FILE} and per-species logs under ${LOG_DIR}."
     exit 1
@@ -481,7 +482,7 @@ done
 
 # Only count species skipped entirely (missing input / missing summary), not
 # per-step skips like "skipping transcript extraction" for one optional step.
-n_skipped=$(grep -cE "Missing (input files|summary) for .*, skipping" "$LOG_FILE" 2>/dev/null || true)
+n_skipped=$(grep -cE "(Missing (input files|summary)|Isoform output empty) for .*, skipping" "$LOG_FILE" 2>/dev/null || true)
 n_skipped=${n_skipped:-0}
 
 read -r total_input total_cleaned total_output < <(
