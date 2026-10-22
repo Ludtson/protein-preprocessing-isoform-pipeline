@@ -236,7 +236,7 @@ def get_authenticity_score(header):
 def generate_header_fingerprint(header):
     """
     Parses [location=...] from header and generates "start-end|start-end" string.
-    Fix: Now handles '<' and '>' characters in NCBI partial coordinates (e.g. 123..>456).
+    Handles '<' and '>' characters in NCBI partial coordinates (e.g. 123..>456).
     """
     # Look for [location=...]
     match = re.search(r'\[location=([^\]]+)\]', header)
@@ -674,7 +674,7 @@ if __name__ == "__main__":
         id_map, loc_map = parse_gff_map(args.gff)
         print(f"Input Proteins: {len(valid_ids)}")
         
-        # ✅ SAFE handling: out_dir may not exist in single mode
+        # SAFE handling: out_dir may not exist in single mode
         out_dir = getattr(args, "out_dir", None)
 
         if args.cds:

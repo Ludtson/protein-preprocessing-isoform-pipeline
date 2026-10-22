@@ -100,7 +100,7 @@ def rebuild_gene_features(gff_lines):
             gene_id = attributes.get("geneID")
 
             if gene_id:
-                # ✅ create gene feature ONCE
+                # create gene feature ONCE
                 if gene_id not in seen_genes:
                     gene_line = parts.copy()
                     gene_line[2] = "gene"
@@ -110,7 +110,7 @@ def rebuild_gene_features(gff_lines):
                     new_lines.append("\t".join(gene_line))
                     seen_genes.add(gene_id)
 
-                # ✅ fix parent relationship
+                # fix parent relationship
                 attributes["Parent"] = gene_id
                 parts[8] = format_attributes(attributes)
                 line = "\t".join(parts)
@@ -199,16 +199,16 @@ def read_gff_maps(gff_path, stderr=sys.stderr):
     biotype_keys_gene = ("gene_biotype", "gene_type", "biotype")
     biotype_keys_tx   = ("transcript_biotype", "transcript_type", "biotype")
 
-    # ✅ Read all lines first
+    # Read all lines first
     with open_maybe_gzip(gff_path, "rt") as fh:
         gff_lines = fh.readlines()
 
-    # ✅ Fix AUGUSTUS-style GFF (missing gene features)
+    # Fix AUGUSTUS-style GFF (missing gene features)
     if not has_gene_features(gff_lines):
         timestamp_message(f"No gene features detected in {gff_path} — rebuilding from geneID", stderr)
         gff_lines = rebuild_gene_features(gff_lines)
 
-    # ✅ MAIN PARSING LOOP
+    # MAIN PARSING LOOP
     for line in gff_lines:
         if not line or line.startswith("#"):
             continue
@@ -220,13 +220,13 @@ def read_gff_maps(gff_path, stderr=sys.stderr):
         _seqid, _src, ftype, start, end, _score, strand, _phase, attr = cols
         attrs = parse_gff_attributes(attr)
 
-        # ✅ Capture special flags
+        # Capture special flags
         for key in ("transl_except", "selenocysteine", "ribosomal_slippage", "exception"):
             if key in attrs and "Parent" in attrs:
                 for tid0 in attrs["Parent"].split(","):
                     special_flags[tid0].add(key)
 
-        # ✅ GENE
+        # GENE
         if ftype == "gene":
             gid = attrs.get("ID") or attrs.get("Name")
             if gid:
@@ -236,7 +236,7 @@ def read_gff_maps(gff_path, stderr=sys.stderr):
                         gene_biotype[gid] = attrs[k]
                         break
 
-        # ✅ TRANSCRIPT
+        # TRANSCRIPT
         elif ftype in transcript_types:
             tid = attrs.get("ID") or attrs.get("transcript_id") or attrs.get("Name")
             parent = attrs.get("Parent")
@@ -277,7 +277,7 @@ def read_gff_maps(gff_path, stderr=sys.stderr):
             for a in aliases:
                 transcript_alias_to_id.setdefault(a, tid)
 
-        # ✅ EXONS
+        # EXONS
         elif ftype == "exon":
             parent = attrs.get("Parent")
             if not parent:
@@ -293,7 +293,7 @@ def read_gff_maps(gff_path, stderr=sys.stderr):
                 exon_len_sum[tid] += max(0, length)
                 exon_counts[tid] += 1
 
-        # ✅ CDS
+        # CDS
         elif ftype == "CDS":
             parent = attrs.get("Parent")
             if not parent:
@@ -321,14 +321,14 @@ def read_gff_maps(gff_path, stderr=sys.stderr):
                 if pid:
                     protein_to_transcript.setdefault(pid, tid)
 
-        # ✅ STOP CODON
+        # STOP CODON
         elif ftype == "stop_codon":
             parent = attrs.get("Parent")
             if parent:
                 for tid in parent.split(","):
                     stopcodon_present[tid] = 1
 
-        # ✅ PROTEIN FEATURES
+        # PROTEIN FEATURES
         elif ftype in protein_feature_types:
             pid = attrs.get("ID") or attrs.get("Name")
             tid = attrs.get("Derives_from") or attrs.get("Parent")
@@ -336,11 +336,11 @@ def read_gff_maps(gff_path, stderr=sys.stderr):
             if pid and tid:
                 derives_protein_to_tx[pid] = tid
 
-    # ✅ Merge derived protein mappings
+    # Merge derived protein mappings
     for pid, tid in derives_protein_to_tx.items():
         protein_to_transcript.setdefault(pid, tid)
 
-    # ✅ mRNA lengths
+    # mRNA lengths
     mrna_lengths = {}
     all_tids = set(transcript_to_gene) | set(exon_len_sum) | set(tx_span_start)
     for tid in all_tids:
@@ -351,7 +351,7 @@ def read_gff_maps(gff_path, stderr=sys.stderr):
         else:
             mrna_lengths[tid] = 0
 
-    # ✅ CDS lengths
+    # CDS lengths
     cds_lengths = {}
     for tid in set(transcript_to_gene) | set(cds_len_sum):
         cds_lengths[tid] = cds_len_sum.get(tid, 0)

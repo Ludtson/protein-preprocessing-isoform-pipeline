@@ -175,11 +175,11 @@ def main(args):
         with open(args.base_file, 'r', newline='', encoding='utf-8') as infile, \
             open(args.output_file, 'w', newline='', encoding='utf-8') as outfile:
 
-            # ✅ robust parsing
+            # robust parsing
             reader = csv.DictReader(infile, delimiter=base_delim, skipinitialspace=True)
             base_headers = [h.strip() for h in (reader.fieldnames or [])]
 
-            # ✅ filter base columns if requested
+            # filter base columns if requested
             if keep_base_cols:
                 base_headers = [h for h in base_headers if h in keep_base_cols or h == base_key]
 
@@ -211,7 +211,7 @@ def main(args):
 
             final_headers = base_headers + columns_to_add
 
-            # ✅ FIX: match output delimiter to base file
+            # match output delimiter to base file
             writer = csv.DictWriter(
                 outfile,
                 fieldnames=final_headers,
@@ -227,7 +227,7 @@ def main(args):
                 if key_value is not None:
                     key_value = key_value.strip()
 
-                # ✅ only keep filtered base columns
+                # only keep filtered base columns
                 if keep_base_cols:
                     final_row = {k: base_row.get(k) for k in base_headers}
                 else:

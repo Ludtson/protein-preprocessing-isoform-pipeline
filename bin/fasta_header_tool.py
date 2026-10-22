@@ -151,23 +151,23 @@ def main():
 
     args = parser.parse_args()
 
-    # ✅ Print version
+    # Print version
     log(f"Running fasta_header_tool.py v{__version__}")
 
-    # ✅ conflict check
+    # conflict check
     if args.add_species and args.add_species_map:
         print("[ERROR] Choose either --add-species or --add-species-map", file=sys.stderr)
         sys.exit(1)
 
     species_map = load_map(args.add_species_map) if args.add_species_map else None
 
-    # ✅ directory mode
+    # directory mode
     if os.path.isdir(args.input):
 
         if not os.path.exists(args.output):
             os.makedirs(args.output)
 
-        # ✅ choose traversal mode
+        # choose traversal mode
         if args.recursive:
             dirs = os.walk(args.input)
         else:
@@ -184,7 +184,7 @@ def main():
 
                     process_file(infile, outfile, args, species_map)
 
-    # ✅ single file mode
+    # single file mode
     else:
         process_file(args.input, args.output, args, species_map)
 
