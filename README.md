@@ -16,7 +16,7 @@ This tool starts from GFF and protein FASTA files you already have. It does not 
 
 **1. Protein-level quality control.** Sequences are filtered for three defects: no start codon (methionine), length below a minimum cutoff (30 amino acids by default), and internal stop codons. This step produces a clean proteome suitable for evolutionary analysis.
 
-**2. Isoform normalization.** The longest protein isoform per gene is selected, gene identifiers are standardized, and redundant isoforms are removed so each gene is represented by exactly one protein.
+**2. Isoform normalization.** The longest protein isoform per gene is selected and redundant isoforms are removed, so each gene is represented by exactly one protein, under that protein's identifier from the source annotation (see [Identifiers](#identifiers)).
 
 **3. Nucleotide sequence extraction (optional).** The longest CDS and corresponding cDNA sequences are extracted for the selected isoforms, preserving the link between protein and nucleotide data for analyses that need it.
 
@@ -163,6 +163,17 @@ Accepted input extensions:
 If none of a species' required files (GFF and protein FASTA) can be found under any accepted extension, that species is skipped with a `[WARNING] Missing input files for <name> ...` line in `pipeline.log` naming the extensions that were tried — this applies whether you're running with `-m/--map-file` or discovering species directly from `--fasta-dir`.
 
 Output naming is fixed regardless of the input extension: CDS output is always written as `<basename>.fna` under `6_longest_cds/`, and cDNA output is always `<basename>.cdna.fasta` under `7_longest_cdna/`.
+
+### Identifiers
+
+Each gene is represented by the protein ID of its selected isoform, as given in the source protein FASTA (first word of the header). The pipeline does not shorten or rewrite IDs: version numbers, `.p` suffixes and similar parts stay as they are, so every output ID can be looked up in its source database. The only change is removal of a leading `protein_id:` or `UniProtKB:` database prefix.
+
+- **Protein FASTA** (`4_longest_proteins/`, `5_final_proteins/`): header = protein ID.
+- **CDS and cDNA FASTA** (`6_longest_cds/`, `7_longest_cdna/`): header = the same protein ID, followed by the original nucleotide header. Protein and nucleotide files can therefore be joined on the first word of the header, even when the source CDS file used transcript IDs or NCBI `lcl|...` names.
+- **ID table** (`3_isoform_details/<basename>_isoform_details.tsv`, and all species stacked in `master_longest_isoforms.tsv`): one row per gene, with `Gene_ID`, `Transcript_ID` and `Protein_ID` of the selected isoform, and every other isoform in `Other_Isoforms_Details`. Keep it with the outputs: it links each protein ID to the gene and transcript IDs used in the GFF.
+- **`--format-headers`** (off by default) trims headers to the first word and, with `--add-species`, appends `__<species>`; `fasta_header_tool.py --remove-species` reverses the suffix. The ID table always holds the unmodified IDs.
+
+Genome sequence (chromosome and scaffold) names are not used by this pipeline. Tools that later combine its outputs with a genome FASTA need the GFF and genome to name sequences the same way. GenBank (GCA) and RefSeq (GCF) copies of one assembly do not.
 
 ## Reproducible example
 

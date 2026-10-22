@@ -56,9 +56,10 @@ VALID_EXT = (".fa", ".fasta", ".faa", ".fna")
 # ------------------ Utilities ------------------
 
 def open_file(path, mode="rt"):
+    newline = "\n" if "w" in mode else None  # LF line endings on every OS
     if path.endswith(".gz"):
-        return gzip.open(path, mode)
-    return open(path, mode)
+        return gzip.open(path, mode, newline=newline)
+    return open(path, mode, newline=newline)
 
 def clean_header(header):
     return header.split()[0]

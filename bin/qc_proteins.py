@@ -130,7 +130,7 @@ def main():
         opener = gzip.open if args.input_fasta.endswith('.gz') else open
         
         with opener(args.input_fasta, 'rt', encoding='utf-8') as ifh, \
-             open(args.output_fasta, 'w', encoding='utf-8') as ofh:
+             open(args.output_fasta, 'w', encoding='utf-8', newline='\n') as ofh:
 
             header = ""
             seq = ""
@@ -234,7 +234,7 @@ def main():
     if args.detailed_tsv:
         timestamp_message(f"Writing detailed TSV to {args.detailed_tsv}")
         try:
-            with open(Path(args.detailed_tsv), "w", encoding="utf-8") as oh:
+            with open(Path(args.detailed_tsv), "w", encoding="utf-8", newline="\n") as oh:
                 headers = [("Species"), "Protein_ID", "Status", "Sequence"]
                 oh.write("\t".join(headers) + "\n")
                 for _, prot_id, status, seq in problem_rows:

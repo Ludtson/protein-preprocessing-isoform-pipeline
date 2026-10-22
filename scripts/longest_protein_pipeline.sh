@@ -469,11 +469,12 @@ if [ "$n_processed" -le 0 ]; then
 fi
 
 # -------- MASTER DETAILED --------
-echo -e "Species\tGene_ID\tTranscript_ID\tProtein_ID\tProtein_Length\tmRNA_length\tCDS_Length\tDelta_nt\tStopFeature\tFlags\tGene_Strand\tGene_Isoforms\tmRNA_exons" > "$MASTER_DETAILED_TSV"
+# Per-species tables already start with the Species column; stack their rows under the same header.
+echo -e "Species\tGene_ID\tTranscript_ID\tProtein_ID\tProtein_Length\tmRNA_length\tCDS_Length\tDelta_nt\tStopFeature\tFlags\tGene_Strand\tGene_Isoforms\tmRNA_exons\tOther_Isoforms_Details" > "$MASTER_DETAILED_TSV"
 
 for file in "$ISOFORM_DETAILS_SUBDIR"/*_isoform_details.tsv; do
-    species=$(basename "$file" _isoform_details.tsv)
-    awk -v sp="$species" 'NR>1 {print sp "\t" $0}' "$file" >> "$MASTER_DETAILED_TSV"
+    [ -s "$file" ] || continue
+    tail -n +2 "$file" >> "$MASTER_DETAILED_TSV"
 done
 
 # =========================================

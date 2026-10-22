@@ -22,9 +22,9 @@ TSV Columns:
   Gene_Strand        # Strand of the gene (+ or -)
   Gene_Isoforms      # Total count of isoforms for this gene
   mRNA_exons         # Number of exons for the selected isoform
-  Other_Isoforms     # Details on all other isoforms of this gene
+  Other_Isoforms_Details  # Details on all other isoforms of this gene
 
-Other_Isoforms Format:
+Other_Isoforms_Details format:
 "T_ID|mRNA=<length>|P_ID|aa=<length>|Stop=<0/1>" (semicolon-separated for multiple)
 
 Usage:
@@ -61,10 +61,11 @@ def timestamp_message(message: str, file=sys.stderr):
     print(f"[{current_time}] [INFO] {message}", file=file)
 
 def open_maybe_gzip(path: str, mode: str):
-    """Open a file, handling gzipped files transparently."""
+    """Open a file, handling gzipped files transparently. Writes use LF line endings on every OS."""
+    newline = "\n" if "w" in mode else None
     if path.lower().endswith(".gz"):
-        return gzip.open(path, mode, encoding="utf-8", errors="ignore")
-    return open(path, mode, encoding="utf-8", errors="ignore")
+        return gzip.open(path, mode, encoding="utf-8", errors="ignore", newline=newline)
+    return open(path, mode, encoding="utf-8", errors="ignore", newline=newline)
 
 def parse_attributes(attr_str):
     d = {}

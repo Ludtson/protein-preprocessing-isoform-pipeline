@@ -216,7 +216,8 @@ def main(args):
                 outfile,
                 fieldnames=final_headers,
                 delimiter=base_delim,
-                extrasaction='ignore'
+                extrasaction='ignore',
+                lineterminator='\n'
             )
             writer.writeheader()
 

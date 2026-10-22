@@ -380,10 +380,9 @@ def process_fasta(input_path, output_path, mapping_dict, loc_map, valid_ids_dict
     # --- Write Output ---
     metadata = {} # ID -> {'len': int, 'logic': str}
 
-    with open(output_path, 'w') as fout:
+    with open(output_path, 'w', newline='\n') as fout:
         for pid, (_, seq_len, head, seq, logic) in best_matches.items():
             clean_head = head.lstrip('>')
-            # fout.write(f"{head}\n{seq}\n")
             if clean_head != pid:
                 fout.write(f">{pid} {clean_head}\n{seq}\n")
             else:
@@ -397,7 +396,7 @@ def process_fasta(input_path, output_path, mapping_dict, loc_map, valid_ids_dict
         duplicates_found = {k: v for k, v in all_candidates_log.items() if len(v) > 1}
         if duplicates_found:
             try:
-                with open(dedup_out_path, 'w') as flog:
+                with open(dedup_out_path, 'w', newline='\n') as flog:
                     flog.write(f"# ProteinID\tKept_Header\tSkipped_Headers...\n")
                     for pid, headers in duplicates_found.items():
                         kept_header = best_matches[pid][2].strip()
@@ -415,7 +414,7 @@ def process_fasta(input_path, output_path, mapping_dict, loc_map, valid_ids_dict
         
         if missing_ids:
             try:
-                with open(missing_out_path, 'w') as fmiss:
+                with open(missing_out_path, 'w', newline='\n') as fmiss:
                     fmiss.write("# ProteinID\tGeneID\tOriginalProteinHeader\n")
                     for mid in sorted(missing_ids):
                         # Extract header from valid_ids_dict (structure depends on mode)
@@ -649,7 +648,7 @@ if __name__ == "__main__":
             master_path = os.path.join(args.out_dir, "master_table.tsv")
             print(f"Writing Master Table to: {master_path}")
             try:
-                with open(master_path, 'w') as fmaster:
+                with open(master_path, 'w', newline='\n') as fmaster:
                     fmaster.write("Species\tProteinID\tPrtLen\tCDSLen\tCDNALen\tCDS_Logic\tcDNA_Logic\n")
                     fmaster.write("\n".join(all_table_rows))
                     fmaster.write("\n")

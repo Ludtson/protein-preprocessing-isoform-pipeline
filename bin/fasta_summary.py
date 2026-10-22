@@ -172,7 +172,7 @@ def main():
 
     if args.output:
         try:
-            with open(args.output, "w") as out:
+            with open(args.output, "w", newline="\n") as out:
                 out.write("\n".join(output_lines) + "\n")
         except Exception as e:
             print(f"[ERROR] Could not write output: {e}", file=sys.stderr)
