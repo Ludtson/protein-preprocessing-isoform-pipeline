@@ -167,7 +167,7 @@ def maybe_from_dbxref(attrs):
             continue
         if "protein_id:" in part:
             return part.split("protein_id:")[-1]
-        if part.startswith(("RefSeq:", "Genbank:", "GenBank:", "UniProtKB:")):
+        if part.startswith(("RefSeq:", "Genbank:", "GenBank:", "UniProtKB:", "NCBI_GP:")):
             return part.split(":", 1)[-1]
     return None
 
@@ -340,6 +340,12 @@ def read_gff_maps(gff_path, stderr=sys.stderr):
     # Merge derived protein mappings
     for pid, tid in derives_protein_to_tx.items():
         protein_to_transcript.setdefault(pid, tid)
+
+    # CDS whose parent is a gene, not a transcript (e.g. NCBI GenBank annotations without mRNA
+    # features): treat that gene as its own single transcript
+    for tid in transcripts_with_cds:
+        if tid not in transcript_to_gene and tid in gene_strand:
+            transcript_to_gene[tid] = tid
 
     # mRNA lengths
     mrna_lengths = {}
