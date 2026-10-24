@@ -335,6 +335,11 @@ def process_fasta(input_path, output_path, mapping_dict, loc_map, valid_ids_dict
             first_id = header.strip().split()[0][1:]   # the record's own ID, often a transcript accession
             if first_id in mapping_dict:
                 candidates.append((mapping_dict[first_id], "TransMap"))
+            first_field = first_id.split('|')[0]        # IDs joined to the description by '|' (e.g. Ensembl/Gramene dumps)
+            if first_field != first_id:
+                candidates.append((first_field, "SimpleID"))
+                if first_field in mapping_dict:
+                    candidates.append((mapping_dict[first_field], "TransMap"))
 
             m_locus = re_locus_tag.search(header)
             if m_locus and m_locus.group(1) in mapping_dict:
