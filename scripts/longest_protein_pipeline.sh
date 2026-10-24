@@ -63,6 +63,11 @@ CDNA_DIR=""
 QC_PYTHON_CMD="$SCRIPT_DIR/../bin/qc_proteins.py"
 ISO_SEL_PYTHON_CMD="$SCRIPT_DIR/../bin/select_longest_proteins.py"
 HEADER_TOOL_CMD="$SCRIPT_DIR/../bin/fasta_header_tool.py"
+EXTRACT_CMD="$SCRIPT_DIR/../bin/extract_longest_transcripts.py"
+# Scripts are run through the interpreter, so a lost executable bit or a CRLF shebang cannot stop a step.
+PY="${PYTHON:-python3}"
+# Species whose longest isoforms link to fewer CDS/cDNA records than this (%) get a warning.
+MIN_LINK_PCT="${MIN_LINK_PCT:-90}"
 
 # --- Logging helper ---
 # Prints a timestamped, leveled message to stdout, and also appends it to
@@ -219,13 +224,19 @@ process_one_species () {
     output_cleaned_fasta="${CLEANED_FASTA_SUBDIR}/${base_name}_cleaned${FASTA_EXT}"
     output_qc_tsv="${QC_DETAILS_SUBDIR}/${base_name}_qc_details.tsv"
 
-    qc_summary=$("$QC_PYTHON_CMD" \
+    # errexit is suspended while process_one_species runs inside "if", so each step checks its own status
+    local st=0
+    qc_summary=$("$PY" "$QC_PYTHON_CMD" \
         -i "$input_fasta" \
         -o "$output_cleaned_fasta" \
         -d "$output_qc_tsv" \
         -s "$species_name" \
         -l "$MIN_LEN" \
-        $KEEP_NOM_FLAG 2>>"$LOG_FILE")
+        $KEEP_NOM_FLAG 2>>"$LOG_FILE") || st=$?
+    if [ "$st" -ne 0 ]; then
+        log ERROR "qc_proteins.py failed for ${base_name} (exit ${st})"
+        return 1
+    fi
 
     # Preserve the original tab delimiter (no whitespace collapsing).
     qc_line=$(echo "$qc_summary" | grep "^${species_name}[[:space:]]")
@@ -234,12 +245,16 @@ process_one_species () {
     output_iso_tsv="${ISOFORM_DETAILS_SUBDIR}/${base_name}_isoform_details.tsv"
     output_primary_fasta="${PRIMARY_FASTA_SUBDIR}/${base_name}_longest_proteins${FASTA_EXT}"
 
-    iso_summary=$("$ISO_SEL_PYTHON_CMD" \
+    iso_summary=$("$PY" "$ISO_SEL_PYTHON_CMD" \
         -g "$input_gff" \
         -f "$output_cleaned_fasta" \
         -v "$output_iso_tsv" \
         -o "$output_primary_fasta" \
-        -s "$species_name" 2>>"$LOG_FILE")
+        -s "$species_name" 2>>"$LOG_FILE") || st=$?
+    if [ "$st" -ne 0 ]; then
+        log ERROR "select_longest_proteins.py failed for ${base_name} (exit ${st})"
+        return 1
+    fi
 
     iso_line=$(echo "$iso_summary" | grep "^${species_name}[[:space:]]")
 
@@ -271,7 +286,11 @@ process_one_species () {
         if [ "$REMOVE_SPECIES" = true ]; then
             header_args+=(--remove-species)
         fi
-        "$HEADER_TOOL_CMD" -i "$output_primary_fasta" -o "$output_final_fasta" "${header_args[@]}" >> "$LOG_FILE" 2>&1
+        "$PY" "$HEADER_TOOL_CMD" -i "$output_primary_fasta" -o "$output_final_fasta" "${header_args[@]}" >> "$LOG_FILE" 2>&1 || st=$?
+        if [ "$st" -ne 0 ]; then
+            log ERROR "fasta_header_tool.py failed for ${base_name} (exit ${st})"
+            return 1
+        fi
     else
         cp "$output_primary_fasta" "$output_final_fasta"
     fi
@@ -305,14 +324,36 @@ process_one_species () {
         fi
 
         if [ ${#cds_input[@]} -gt 0 ] || [ ${#cdna_input[@]} -gt 0 ]; then
-            "$SCRIPT_DIR/../bin/extract_longest_transcripts.py" \
+            "$PY" "$EXTRACT_CMD" \
                 --gff "$input_gff" \
                 --protein "$output_primary_fasta" \
                 "${cds_input[@]}" \
                 "${cdna_input[@]}" \
                 "${cds_out[@]}" \
                 "${cdna_out[@]}" \
-                >> "$LOG_FILE" 2>&1
+                >> "$LOG_FILE" 2>&1 || st=$?
+            if [ "$st" -ne 0 ]; then
+                log ERROR "extract_longest_transcripts.py failed for ${base_name} (exit ${st})"
+                return 1
+            fi
+            # Link rate: longest-isoform proteins with a CDS / cDNA record
+            n_prot=$(grep -c '^>' "$output_primary_fasta" || true)
+            link_row="${species_name}\t${n_prot}"
+            for kind in CDS cDNA; do
+                if [ "$kind" = CDS ]; then out_args=("${cds_out[@]}"); else out_args=("${cdna_out[@]}"); fi
+                if [ ${#out_args[@]} -gt 0 ]; then
+                    n_link=$(grep -c '^>' "${out_args[1]}" 2>/dev/null || true); n_link=${n_link:-0}
+                    pct=$(awk -v a="$n_link" -v b="$n_prot" 'BEGIN{printf "%.1f", (b>0 ? 100*a/b : 0)}')
+                    log INFO "${kind} linked for ${base_name}: ${n_link} of ${n_prot} proteins (${pct}%)"
+                    if awk -v p="$pct" -v m="$MIN_LINK_PCT" 'BEGIN{exit !(p < m)}'; then
+                        log WARNING "Low ${kind} linkage for ${base_name}: ${pct}% < ${MIN_LINK_PCT}% (check the ID formats of the ${kind} file and the GFF)"
+                    fi
+                    link_row="${link_row}\t${n_link}\t${pct}"
+                else
+                    link_row="${link_row}\tNA\tNA"
+                fi
+            done
+            printf "%b\n" "$link_row" > "$OUTPUT_DIR/tmp_${base_name}_links.tsv"
         else
             log WARNING "No CDS/cDNA file found for ${base_name}, skipping transcript extraction"
         fi
@@ -461,6 +502,19 @@ done
 # optional cleanup
 rm -f "$OUTPUT_DIR"/tmp_*_summary.tsv
 
+# -------- TRANSCRIPT LINK REPORT --------
+LINK_REPORT="${OUTPUT_DIR}/transcript_link_report.tsv"
+n_low_link=0
+if [ "$WITH_TRANSCRIPTS" = true ]; then
+    echo -e "Species\tN_longest_proteins\tN_CDS_linked\tCDS_linked_pct\tN_cDNA_linked\tcDNA_linked_pct" > "$LINK_REPORT"
+    for file in "$OUTPUT_DIR"/tmp_*_links.tsv; do
+        [ -s "$file" ] || continue
+        cat "$file" >> "$LINK_REPORT"
+    done
+    rm -f "$OUTPUT_DIR"/tmp_*_links.tsv
+    n_low_link=$(awk -F'\t' -v m="$MIN_LINK_PCT" 'NR>1 && (($4!="NA" && $4<m) || ($6!="NA" && $6<m)) {n++} END{print n+0}' "$LINK_REPORT")
+fi
+
 # processed = species with a non-empty final protein file (a summary row is written before the empty-output check)
 n_processed=$(find "$FINAL_FASTA_SUBDIR" -name "*_final${FASTA_EXT}" -size +0 2>/dev/null | wc -l)
 if [ "$n_processed" -le 0 ]; then
@@ -512,9 +566,15 @@ elapsed_fmt=$(printf '%02dh:%02dm:%02ds' $((elapsed/3600)) $(((elapsed%3600)/60)
     echo "  Total final proteins:   ${total_output}"
     echo "  QC retention rate:      ${qc_retention}%"
     echo "  Isoform reduction rate: ${iso_reduction}%"
+    if [ "$WITH_TRANSCRIPTS" = true ]; then
+        echo "  Transcript linking:     ${n_low_link} species below ${MIN_LINK_PCT}% (see transcript_link_report.tsv)"
+    fi
     echo "  Runtime:                ${elapsed_fmt}"
 } | tee "$RUN_SUMMARY_FILE"
 
 log INFO "All species processed. Master summary report: ${SUMMARY_FILE}"
 log INFO "Master detailed report: ${MASTER_DETAILED_TSV}"
 log INFO "Run summary: ${RUN_SUMMARY_FILE}"
+if [ "$n_low_link" -gt 0 ]; then
+    log WARNING "${n_low_link} species with CDS/cDNA linkage below ${MIN_LINK_PCT}%: see ${LINK_REPORT}"
+fi
