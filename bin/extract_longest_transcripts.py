@@ -125,6 +125,10 @@ def parse_gff_map(gff_path):
     re_name = re.compile(r'Name=([^;]+)')
     re_gene_attr = re.compile(r'gene=([^;]+)')
     re_protein = re.compile(r'protein_id=([^;]+)')
+    re_protein_acc = re.compile(r'Protein_Accession=([^;]+)')   # CNCB GWH
+    re_accession = re.compile(r'(?:^|;)Accession=([^;]+)')       # CNCB GWH gene / transcript accession
+    re_parent_acc = re.compile(r'Parent_Accession=([^;]+)')
+    re_transcript_attr = re.compile(r'transcript_id=([^;]+)')
     re_dbxref_geneid = re.compile(r'GeneID:(\d+)')
     
     try:
@@ -156,19 +160,28 @@ def parse_gff_map(gff_path):
                     
                     m_geneid = re_dbxref_geneid.search(attributes)
                     if m_geneid: gene_id_to_keys[obj_id].append(f"GeneID:{m_geneid.group(1)}")
+                    m_acc = re_accession.search(attributes)
+                    if m_acc: gene_id_to_keys[obj_id].append(m_acc.group(1))
 
                 # 2. Harvest Keys from mRNA features
                 elif feat_type in ['mRNA', 'transcript', 'mrna'] and obj_id:
                     if parent_id: mrna_id_to_gene_id[obj_id] = parent_id
                     if re_locus.search(attributes): mrna_id_to_keys[obj_id].append(re_locus.search(attributes).group(1))
+                    # transcript-level keys (one isoform each): its own ID, Name, Accession, transcript_id
+                    mrna_id_to_keys[obj_id].append(obj_id)
+                    for rx in (re_name, re_accession, re_transcript_attr):
+                        m = rx.search(attributes)
+                        if m: mrna_id_to_keys[obj_id].append(m.group(1))
 
                 # 3. Map CDS -> Protein ID
                 elif feat_type == 'CDS' and parent_id:
-                    m_prot = re_protein.search(attributes)
+                    m_prot = re_protein.search(attributes) or re_protein_acc.search(attributes)
                     if m_prot:
                         # Handle multiple parents if strictly necessary, but usually comma separated
                         for pid in parent_id.split(','):
                             cds_parent_to_prot[pid] = m_prot.group(1)
+                            m_pacc = re_parent_acc.search(attributes)   # transcript accession of this CDS
+                            if m_pacc: mrna_id_to_keys[pid].append(m_pacc.group(1))
 
                 # 4. Harvest Exons for Structural Fingerprinting
                 elif feat_type == 'exon' and parent_id:
@@ -275,6 +288,10 @@ def process_fasta(input_path, output_path, mapping_dict, loc_map, valid_ids_dict
     re_locus_tag = re.compile(r'\[locus_tag=([^\]]+)\]')
     re_gene_tag = re.compile(r'\[gene=([^\]]+)\]')
     re_dbxref_geneid = re.compile(r'GeneID:(\d+)')
+    # key=value header fields (e.g. CNCB GWH: Protein=, mRNA=, Gene=); values are whitespace-delimited
+    re_hdr_protein = re.compile(r'(?:^|\s)(?:Protein|protein)=(\S+)')
+    re_hdr_transcript = re.compile(r'(?:^|\s)(?:mRNA|Transcript|transcript)=(\S+)')
+    re_hdr_gene = re.compile(r'(?:^|\s)(?:Gene|gene)=(\S+)')
     
     # Fallback: Extract ID from NCBI lcl| header (e.g. lcl|NC_123_cds_XP_456.1_789)
     re_lcl_fallback = re.compile(r'_cds_([A-Za-z0-9]+\.\d+)_')
@@ -298,6 +315,9 @@ def process_fasta(input_path, output_path, mapping_dict, loc_map, valid_ids_dict
             m_poly = re_polypeptide.search(header)
             if m_poly: candidates.append((m_poly.group(1), "ExplicitID"))
 
+            m_hp = re_hdr_protein.search(header)
+            if m_hp: candidates.append((m_hp.group(1), "ExplicitID"))
+
             # Priority 1: Structural Fingerprint
             fingerprint = generate_header_fingerprint(header)
             if fingerprint and fingerprint in loc_map:
@@ -308,6 +328,14 @@ def process_fasta(input_path, output_path, mapping_dict, loc_map, valid_ids_dict
             if m_trans and m_trans.group(1) in mapping_dict:
                 candidates.append((mapping_dict[m_trans.group(1)], "TransMap"))
 
+            m_ht = re_hdr_transcript.search(header)
+            if m_ht and m_ht.group(1) in mapping_dict:
+                candidates.append((mapping_dict[m_ht.group(1)], "TransMap"))
+
+            first_id = header.strip().split()[0][1:]   # the record's own ID, often a transcript accession
+            if first_id in mapping_dict:
+                candidates.append((mapping_dict[first_id], "TransMap"))
+
             m_locus = re_locus_tag.search(header)
             if m_locus and m_locus.group(1) in mapping_dict:
                 candidates.append((mapping_dict[m_locus.group(1)], "LocusMap"))
@@ -315,6 +343,10 @@ def process_fasta(input_path, output_path, mapping_dict, loc_map, valid_ids_dict
             m_gene = re_gene_tag.search(header)
             if m_gene and m_gene.group(1) in mapping_dict:
                 candidates.append((mapping_dict[m_gene.group(1)], "GeneMap"))
+
+            m_hg = re_hdr_gene.search(header)   # gene-level: links only single-isoform genes (ambiguity filter)
+            if m_hg and m_hg.group(1) in mapping_dict:
+                candidates.append((mapping_dict[m_hg.group(1)], "GeneMap"))
             
             m_geneid = re_dbxref_geneid.search(header)
             if m_geneid:
